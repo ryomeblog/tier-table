@@ -26,33 +26,23 @@ const TIERS = [
 const STORAGE_ID = 'storage';
 const getTierId = name => `tier-${name}`;
 
-// すべての有効なコンテナIDを取得
-const getAllContainerIds = () => [STORAGE_ID, ...TIERS.map(tier => getTierId(tier.name))];
-
 // ドロップ先のコンテナIDを取得するヘルパー関数
-const getTargetContainer = (over, items) => {
+const getTargetContainer = over => {
   if (!over) return null;
 
-  // 1. ストレージエリアへのドロップ
+  // ストレージエリアへのドロップ
   if (over.id === STORAGE_ID) {
     return STORAGE_ID;
   }
 
-  // 2. Tier表へのドロップ
-  const tierMatch = TIERS.find(tier => getTierId(tier.name) === over.id);
-  if (tierMatch) {
-    return getTierId(tierMatch.name);
+  // Tier表の領域へのドロップ
+  if (over.id.startsWith('tier-')) {
+    return over.id;
   }
 
-  // 3. アイテム上へのドロップ（親コンテナを特定）
-  const targetId = over.id;
-  for (const containerId of getAllContainerIds()) {
-    if (items[containerId]?.includes(targetId)) {
-      return containerId;
-    }
-  }
-
-  return null;
+  // アイテム上へのドロップの場合は、アイテムが属するコンテナのIDを使用
+  const containerData = over.data.current?.sortable;
+  return containerData?.containerId || null;
 };
 
 const StorageArea = ({ items }) => {
@@ -86,7 +76,6 @@ StorageArea.propTypes = {
 const TierList = ({ items, setItems }) => {
   const [activeId, setActiveId] = useState(null);
   const [activeIsStorage, setActiveIsStorage] = useState(false);
-  const [activeContainer, setActiveContainer] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -114,16 +103,13 @@ const TierList = ({ items, setItems }) => {
 
   const handleDragStart = event => {
     const isFromStorage = !event.active.data.current?.sortable;
-    const container = isFromStorage ? STORAGE_ID : event.active.data.current?.sortable.containerId;
-
     setActiveId(event.active.id);
     setActiveIsStorage(isFromStorage);
-    setActiveContainer(container);
 
     console.log('Drag Start:', {
       id: event.active.id,
       isFromStorage,
-      container,
+      container: event.active.data.current?.sortable?.containerId,
     });
   };
 
@@ -131,29 +117,20 @@ const TierList = ({ items, setItems }) => {
     const { active, over } = event;
     setActiveId(null);
     setActiveIsStorage(false);
-    setActiveContainer(null);
 
     if (!over) {
       console.log('No over target, cancelling drag');
       return;
     }
 
-    console.log('Drag End Event:', {
-      active: {
-        id: active.id,
-        data: active.data.current,
-      },
-      over: {
-        id: over.id,
-        data: over.data.current,
-      },
-      activeContainer,
-    });
+    // アクティブなアイテムのコンテナを特定
+    const activeContainer = active.data.current?.sortable?.containerId || STORAGE_ID;
 
     // ドロップ先のコンテナを特定
-    const overContainer = getTargetContainer(over, items);
+    const overContainer = getTargetContainer(over);
+
     if (!overContainer) {
-      console.log('Invalid drop target:', over.id);
+      console.log('Invalid drop target:', over);
       return;
     }
 
@@ -166,59 +143,52 @@ const TierList = ({ items, setItems }) => {
 
     if (overContainer === activeContainer) {
       // 同じコンテナ内での移動
-      if (!activeIsStorage && items[activeContainer]) {
-        // Tier内での移動のみソート可能
-        const oldIndex = items[activeContainer].indexOf(active.id);
-        const newIndex = items[activeContainer].indexOf(over.id);
+      const activeItems = items[activeContainer];
+      if (!activeItems) return;
 
-        console.log('Same container movement:', {
+      const oldIndex = activeItems.indexOf(active.id);
+      const newIndex = activeItems.indexOf(over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        console.log('Reordering within container:', {
+          container: activeContainer,
           oldIndex,
           newIndex,
-          activeItems: items[activeContainer],
         });
 
-        if (oldIndex !== -1) {
-          setItems(prev => ({
-            ...prev,
-            [activeContainer]: arrayMove(
-              prev[activeContainer],
-              oldIndex,
-              newIndex === -1 ? prev[activeContainer].length : newIndex
-            ),
-          }));
-        }
+        setItems(prev => ({
+          ...prev,
+          [activeContainer]: arrayMove(prev[activeContainer], oldIndex, newIndex),
+        }));
       }
     } else {
       // コンテナ間の移動
-      if (!items[activeContainer]?.includes(active.id)) {
+      const sourceItems = items[activeContainer];
+      if (!sourceItems?.includes(active.id)) {
         console.log('Item not found in source container');
         return;
       }
 
-      if (!activeIsStorage && overContainer !== STORAGE_ID) {
-        // Tier間の移動の場合は重複チェック
-        if (isItemInOtherTiers(active.id, overContainer)) {
-          console.log('Duplicate item detected in tiers, cancelling move');
-          return;
-        }
-      }
+      // ストレージとの移動、または同じアイテムが存在しない場合のみ許可
+      if (
+        activeContainer === STORAGE_ID ||
+        overContainer === STORAGE_ID ||
+        !isItemInOtherTiers(active.id, overContainer)
+      ) {
+        console.log('Moving between containers:', {
+          from: activeContainer,
+          to: overContainer,
+          item: active.id,
+        });
 
-      console.log('Moving between containers:', {
-        from: activeContainer,
-        to: overContainer,
-        item: active.id,
-        isFromStorage: activeIsStorage,
-      });
-
-      setItems(prev => {
-        const newItems = {
+        setItems(prev => ({
           ...prev,
           [activeContainer]: prev[activeContainer].filter(item => item !== active.id),
           [overContainer]: [...(prev[overContainer] || []), active.id],
-        };
-        console.log('New items state:', newItems);
-        return newItems;
-      });
+        }));
+      } else {
+        console.log('Duplicate item detected, cancelling move');
+      }
     }
   };
 
@@ -232,14 +202,14 @@ const TierList = ({ items, setItems }) => {
       >
         {TIERS.map(({ name, color }) => {
           const tierId = getTierId(name);
+          const tierItems = items[tierId] || [];
+
           return (
-            <SortableContext key={name} id={tierId} items={items[tierId] || []}>
-              <TierRow tier={name} color={color} items={items[tierId] || []}>
-                {(items[tierId] || []).map(id => (
-                  <DraggableItem key={id} id={id} content={id} isInStorage={false} />
-                ))}
-              </TierRow>
-            </SortableContext>
+            <TierRow key={name} tier={name} color={color} items={tierItems}>
+              {tierItems.map(id => (
+                <DraggableItem key={id} id={id} content={id} isInStorage={false} />
+              ))}
+            </TierRow>
           );
         })}
 

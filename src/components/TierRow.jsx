@@ -4,8 +4,9 @@ import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortabl
 import PropTypes from 'prop-types';
 
 const TierRow = ({ tier, color, items, children }) => {
+  const containerId = `tier-${tier}`;
   const { setNodeRef, isOver } = useDroppable({
-    id: `tier-${tier}`,
+    id: containerId,
   });
 
   return (
@@ -27,7 +28,7 @@ const TierRow = ({ tier, color, items, children }) => {
           ${isOver ? 'bg-opacity-70 border-dashed' : ''}
         `}
       >
-        <SortableContext items={items} strategy={horizontalListSortingStrategy}>
+        <SortableContext id={containerId} items={items} strategy={horizontalListSortingStrategy}>
           {children}
         </SortableContext>
       </div>
