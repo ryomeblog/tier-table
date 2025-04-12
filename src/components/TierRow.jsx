@@ -5,8 +5,15 @@ import PropTypes from 'prop-types';
 
 const TierRow = ({ tier, color, items, children }) => {
   const containerId = `tier-${tier}`;
+
+  // ドロップ可能な領域の設定
   const { setNodeRef, isOver } = useDroppable({
     id: containerId,
+    data: {
+      type: 'tier',
+      accepts: ['item'],
+      tierId: containerId,
+    },
   });
 
   return (
@@ -28,7 +35,7 @@ const TierRow = ({ tier, color, items, children }) => {
           ${isOver ? 'bg-opacity-70 border-dashed' : ''}
         `}
       >
-        <SortableContext id={containerId} items={items} strategy={horizontalListSortingStrategy}>
+        <SortableContext items={items} strategy={horizontalListSortingStrategy}>
           {children}
         </SortableContext>
       </div>

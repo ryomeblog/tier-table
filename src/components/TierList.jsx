@@ -27,27 +27,48 @@ const STORAGE_ID = 'storage';
 const getTierId = name => `tier-${name}`;
 
 // ドロップ先のコンテナIDを取得するヘルパー関数
-const getTargetContainer = over => {
+const getTargetContainer = (over, items) => {
   if (!over) return null;
 
-  // ストレージエリアへのドロップ
+  // 1. ドロップ領域のデータを確認
+  if (over.data.current?.type === 'tier') {
+    return over.data.current.tierId;
+  }
+
+  // 2. ストレージエリアへのドロップ
   if (over.id === STORAGE_ID) {
     return STORAGE_ID;
   }
 
-  // Tier表の領域へのドロップ
-  if (over.id.startsWith('tier-')) {
+  // 3. 既知のTier IDへのドロップ
+  if (typeof over.id === 'string' && over.id.startsWith('tier-')) {
     return over.id;
   }
 
-  // アイテム上へのドロップの場合は、アイテムが属するコンテナのIDを使用
-  const containerData = over.data.current?.sortable;
-  return containerData?.containerId || null;
+  // 4. アイテム上へのドロップ（親コンテナを特定）
+  const dropTargetId = over.id;
+  // まずTier内を検索
+  for (const tier of TIERS) {
+    const tierId = getTierId(tier.name);
+    if (items[tierId]?.includes(dropTargetId)) {
+      return tierId;
+    }
+  }
+  // ストレージ内を検索
+  if (items[STORAGE_ID]?.includes(dropTargetId)) {
+    return STORAGE_ID;
+  }
+
+  return null;
 };
 
 const StorageArea = ({ items }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: STORAGE_ID,
+    data: {
+      type: 'storage',
+      accepts: ['item'],
+    },
   });
 
   return (
@@ -76,6 +97,7 @@ StorageArea.propTypes = {
 const TierList = ({ items, setItems }) => {
   const [activeId, setActiveId] = useState(null);
   const [activeIsStorage, setActiveIsStorage] = useState(false);
+  const [activeContainer, setActiveContainer] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -103,43 +125,77 @@ const TierList = ({ items, setItems }) => {
 
   const handleDragStart = event => {
     const isFromStorage = !event.active.data.current?.sortable;
+    let container;
+
+    // コンテナの特定
+    if (isFromStorage) {
+      container = STORAGE_ID;
+    } else {
+      // Tierからの開始の場合
+      for (const tier of TIERS) {
+        const tierId = getTierId(tier.name);
+        if (items[tierId]?.includes(event.active.id)) {
+          container = tierId;
+          break;
+        }
+      }
+    }
+
     setActiveId(event.active.id);
     setActiveIsStorage(isFromStorage);
+    setActiveContainer(container);
 
     console.log('Drag Start:', {
       id: event.active.id,
-      isFromStorage,
-      container: event.active.data.current?.sortable?.containerId,
+      container,
+      isStorage: isFromStorage,
+      data: event.active.data.current,
     });
   };
 
   const handleDragEnd = event => {
     const { active, over } = event;
-    setActiveId(null);
-    setActiveIsStorage(false);
+
+    console.log('Drag End Raw Event:', {
+      active: {
+        id: active.id,
+        data: active.data.current,
+      },
+      over: over
+        ? {
+            id: over.id,
+            data: over.data.current,
+          }
+        : null,
+      activeContainer,
+    });
 
     if (!over) {
       console.log('No over target, cancelling drag');
+      setActiveId(null);
+      setActiveIsStorage(false);
+      setActiveContainer(null);
       return;
     }
-
-    // アクティブなアイテムのコンテナを特定
-    const activeContainer = active.data.current?.sortable?.containerId || STORAGE_ID;
 
     // ドロップ先のコンテナを特定
-    const overContainer = getTargetContainer(over);
+    const overContainer = getTargetContainer(over, items);
 
-    if (!overContainer) {
-      console.log('Invalid drop target:', over);
-      return;
-    }
-
-    console.log('Container Info:', {
+    console.log('Resolved containers:', {
       activeContainer,
       overContainer,
       activeItems: items[activeContainer],
       overItems: items[overContainer],
+      overData: over.data.current,
     });
+
+    if (!overContainer || !activeContainer) {
+      console.log('Invalid container:', { overContainer, activeContainer });
+      setActiveId(null);
+      setActiveIsStorage(false);
+      setActiveContainer(null);
+      return;
+    }
 
     if (overContainer === activeContainer) {
       // 同じコンテナ内での移動
@@ -147,9 +203,10 @@ const TierList = ({ items, setItems }) => {
       if (!activeItems) return;
 
       const oldIndex = activeItems.indexOf(active.id);
-      const newIndex = activeItems.indexOf(over.id);
+      const overItemIndex = items[overContainer].indexOf(over.id);
+      const newIndex = overItemIndex >= 0 ? overItemIndex : items[overContainer].length;
 
-      if (oldIndex !== -1 && newIndex !== -1) {
+      if (oldIndex !== -1) {
         console.log('Reordering within container:', {
           container: activeContainer,
           oldIndex,
@@ -166,6 +223,9 @@ const TierList = ({ items, setItems }) => {
       const sourceItems = items[activeContainer];
       if (!sourceItems?.includes(active.id)) {
         console.log('Item not found in source container');
+        setActiveId(null);
+        setActiveIsStorage(false);
+        setActiveContainer(null);
         return;
       }
 
@@ -181,15 +241,23 @@ const TierList = ({ items, setItems }) => {
           item: active.id,
         });
 
-        setItems(prev => ({
-          ...prev,
-          [activeContainer]: prev[activeContainer].filter(item => item !== active.id),
-          [overContainer]: [...(prev[overContainer] || []), active.id],
-        }));
+        setItems(prev => {
+          const newItems = {
+            ...prev,
+            [activeContainer]: prev[activeContainer].filter(item => item !== active.id),
+            [overContainer]: [...(prev[overContainer] || []), active.id],
+          };
+          console.log('New items state:', newItems);
+          return newItems;
+        });
       } else {
         console.log('Duplicate item detected, cancelling move');
       }
     }
+
+    setActiveId(null);
+    setActiveIsStorage(false);
+    setActiveContainer(null);
   };
 
   return (
