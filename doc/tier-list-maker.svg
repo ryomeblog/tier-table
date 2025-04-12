@@ -1,0 +1,78 @@
+<svg viewBox="0 0 800 650" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="650" fill="#1e1e1e"/>
+  
+  <!-- App Title and Header -->
+  <text x="400" y="40" font-family="Arial, sans-serif" font-size="32" fill="white" text-anchor="middle" font-weight="bold">ティア表(Tier表)メーカー</text>
+  
+  <!-- Header buttons -->
+  <rect x="240" y="60" width="120" height="40" rx="5" fill="#333333" stroke="#555555"/>
+  <text x="300" y="85" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle">X でシェア</text>
+  
+  <rect x="370" y="60" width="120" height="40" rx="5" fill="#555555" stroke="#666666"/>
+  <text x="430" y="85" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle">アイテム追加</text>
+  
+  <rect x="500" y="60" width="120" height="40" rx="5" fill="#555555" stroke="#666666"/>
+  <text x="560" y="85" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle">画像保存</text>
+  
+  <rect x="630" y="60" width="120" height="40" rx="5" fill="#ff6b6b" stroke="#ff5252"/>
+  <text x="690" y="85" font-family="Arial, sans-serif" font-size="16" fill="white" text-anchor="middle">すべて削除</text>
+  
+  <!-- Tier list container -->
+  <rect x="50" y="120" width="700" height="450" rx="5" fill="#2a2a2a" stroke="#444444"/>
+  
+  <!-- S Tier -->
+  <rect x="50" y="120" width="60" height="90" fill="#ff6b6b"/>
+  <text x="80" y="165" font-family="Arial, sans-serif" font-size="36" fill="white" text-anchor="middle" font-weight="bold">S</text>
+  <rect x="110" y="120" width="640" height="90" fill="#333333" stroke="#555555" stroke-width="2"/>
+  
+  <!-- A Tier -->
+  <rect x="50" y="210" width="60" height="90" fill="#ffb347"/>
+  <text x="80" y="255" font-family="Arial, sans-serif" font-size="36" fill="white" text-anchor="middle" font-weight="bold">A</text>
+  <rect x="110" y="210" width="640" height="90" fill="#333333" stroke="#555555" stroke-width="2"/>
+  
+  <!-- B Tier -->
+  <rect x="50" y="300" width="60" height="90" fill="#ffff66"/>
+  <text x="80" y="345" font-family="Arial, sans-serif" font-size="36" fill="black" text-anchor="middle" font-weight="bold">B</text>
+  <rect x="110" y="300" width="640" height="90" fill="#333333" stroke="#555555" stroke-width="2"/>
+  
+  <!-- C Tier -->
+  <rect x="50" y="390" width="60" height="90" fill="#b9ff73"/>
+  <text x="80" y="435" font-family="Arial, sans-serif" font-size="36" fill="black" text-anchor="middle" font-weight="bold">C</text>
+  <rect x="110" y="390" width="640" height="90" fill="#333333" stroke="#555555" stroke-width="2"/>
+  
+  <!-- D Tier -->
+  <rect x="50" y="480" width="60" height="90" fill="#73c2fb"/>
+  <text x="80" y="525" font-family="Arial, sans-serif" font-size="36" fill="black" text-anchor="middle" font-weight="bold">D</text>
+  <rect x="110" y="480" width="640" height="90" fill="#333333" stroke="#555555" stroke-width="2"/>
+
+  <!-- Outer borders for tier sections -->
+  <rect x="50" y="120" width="700" height="90" fill="none" stroke="#777777" stroke-width="3" rx="3"/>
+  <rect x="50" y="210" width="700" height="90" fill="none" stroke="#777777" stroke-width="3" rx="3"/>
+  <rect x="50" y="300" width="700" height="90" fill="none" stroke="#777777" stroke-width="3" rx="3"/>
+  <rect x="50" y="390" width="700" height="90" fill="none" stroke="#777777" stroke-width="3" rx="3"/>
+  <rect x="50" y="480" width="700" height="90" fill="none" stroke="#777777" stroke-width="3" rx="3"/>
+  
+  <!-- Example items -->
+  <rect x="130" y="135" width="60" height="60" fill="#ff8a8a" rx="3"/>
+  <text x="160" y="170" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Item 1</text>
+  
+  <rect x="200" y="135" width="60" height="60" fill="#ff8a8a" rx="3"/>
+  <text x="230" y="170" font-family="Arial, sans-serif" font-size="14" fill="white" text-anchor="middle">Item 2</text>
+  
+  <rect x="130" y="225" width="60" height="60" fill="#ffc78a" rx="3"/>
+  <text x="160" y="260" font-family="Arial, sans-serif" font-size="14" fill="black" text-anchor="middle">Item 3</text>
+  
+  <!-- Item storage area / アイテム置き場 -->
+  <text x="400" y="590" font-family="Arial, sans-serif" font-size="22" fill="white" text-anchor="middle" font-weight="bold">アイテム置き場</text>
+  <rect x="50" y="600" width="700" height="40" rx="5" fill="#333333" stroke="#555555" stroke-width="2"/>
+  
+  <!-- Example items in storage -->
+  <rect x="65" y="605" width="30" height="30" fill="#ff8a8a" rx="3"/>
+  <rect x="105" y="605" width="30" height="30" fill="#ffc78a" rx="3"/>
+  <rect x="145" y="605" width="30" height="30" fill="#ffffaa" rx="3"/>
+  <rect x="185" y="605" width="30" height="30" fill="#d1ffaa" rx="3"/>
+  <rect x="225" y="605" width="30" height="30" fill="#aad4ff" rx="3"/>
+  <rect x="265" y="605" width="30" height="30" fill="#dddddd" rx="3"/>
+  <rect x="305" y="605" width="30" height="30" fill="#ffaaaa" rx="3"/>
+</svg>
