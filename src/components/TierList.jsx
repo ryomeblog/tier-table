@@ -216,7 +216,7 @@ const TierList = ({ items, setItems, onRemoveItem }) => {
   };
 
   return (
-    <div className="w-full max-w-[700px] mx-auto space-y-0">
+    <div id="tier-list-container" className="w-full max-w-[700px] mx-auto space-y-0 relative">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

@@ -13,9 +13,35 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem }) => {
       const element = document.getElementById('tier-list-container');
       if (!element) return;
 
+      // 元のスタイルを保存
+      const originalStyles = {
+        width: element.style.width,
+        maxWidth: element.style.maxWidth,
+        overflowX: element.style.overflowX,
+        overflowY: element.style.overflowY,
+      };
+
+      // スクロール位置をリセットし、一時的にスクロールを無効化
+      element.scrollLeft = 0;
+      element.scrollTop = 0;
+      element.style.width = 'auto';
+      element.style.maxWidth = 'none';
+      element.style.overflowX = 'visible';
+      element.style.overflowY = 'visible';
+
+      // 要素の実際のサイズを取得
+      const { scrollWidth, scrollHeight } = element;
+
       const dataUrl = await toPng(element, {
         quality: 0.95,
         backgroundColor: '#1e1e1e',
+        width: scrollWidth,
+        height: scrollHeight,
+      });
+
+      // 元のスタイルを復元
+      Object.entries(originalStyles).forEach(([key, value]) => {
+        element.style[key] = value;
       });
 
       // Create download link
