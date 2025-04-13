@@ -1,70 +1,93 @@
-# Getting Started with Create React App
+# Tier List Maker
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+簡単にTierListを作成・共有できるWebアプリケーションです。ドラッグ&ドロップで項目を並び替え、作成したTierListを画像として保存できます。
 
-## Available Scripts
+## デモ
 
-In the project directory, you can run:
+[Tier List Maker](https://ryomeblog.github.io/tier-table)でアプリケーションを利用できます。アプリケーションはGitHub Pagesでホストされており、いつでもアクセス可能です。
 
-### `npm start`
+## 主な機能
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- 🎯 ドラッグ&ドロップで簡単に項目を配置
+- 📸 作成したTierListを画像として保存
+- 🎨 カスタマイズ可能なTier設定
+- 📱 レスポンシブデザイン対応
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 技術スタック
 
-### `npm test`
+- [React](https://reactjs.org/) - UIライブラリ
+- [@dnd-kit](https://dndkit.com/) - ドラッグ&ドロップ機能
+- [TailwindCSS](https://tailwindcss.com/) - スタイリング
+- [Storybook](https://storybook.js.org/) - UIコンポーネント開発
+- [html-to-image](https://github.com/bubkoo/html-to-image) - 画像出力機能
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 開発環境のセットアップ
 
-### `npm run build`
+1. リポジトリのクローン:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+git clone https://github.com/ryomeblog/tier-table.git
+cd tier-table
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+2. 依存関係のインストール:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+npm install
+```
 
-### `npm run eject`
+3. 開発サーバーの起動:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+npm start
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+4. ブラウザで以下のURLにアクセス:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```
+http://localhost:3000
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## 利用可能なスクリプト
 
-## Learn More
+- `npm start` - 開発サーバーを起動
+- `npm test` - テストを実行
+- `npm run build` - プロダクション用ビルドを作成
+- `npm run storybook` - Storybookを起動（コンポーネントの開発・確認用）
+- `npm run format` - コードのフォーマット
+- `npm run lint` - コードの静的解析
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## デプロイ
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+このプロジェクトはGitHub Pagesを使用して自動的にデプロイされます。
 
-### Code Splitting
+1. main/masterブランチへの変更をプッシュすると、GitHub Actionsが自動的にビルドとデプロイを実行
+2. デプロイされたアプリケーションは https://ryomeblog.github.io/tier-table で公開
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+手動でデプロイする場合は以下のコマンドを実行:
 
-### Analyzing the Bundle Size
+```bash
+npm run deploy
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## プロジェクト構造
 
-### Making a Progressive Web App
+```
+src/
+├── components/          # Reactコンポーネント
+│   ├── TierList.jsx    # メインのTierListコンポーネント
+│   ├── TierRow.jsx     # 各Tier行のコンポーネント
+│   └── DraggableItem.jsx # ドラッグ可能なアイテム
+├── stories/            # Storybookのストーリー
+└── App.js             # アプリケーションのエントリーポイント
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## 開発者向け情報
 
-### Advanced Configuration
+- コンポーネントの開発には[Storybook](http://localhost:6006)を使用しています
+- コードの品質管理には[ESLint](https://eslint.org/)と[Prettier](https://prettier.io/)を使用しています
+- GitHub Actionsを使用して自動デプロイを行っています
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## ライセンス
 
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+このプロジェクトはMITライセンスの下で公開されています。
