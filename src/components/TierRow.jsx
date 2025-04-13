@@ -14,6 +14,7 @@ const TierRow = ({ tier, color, items, children }) => {
       accepts: ['item'],
       tierId: containerId,
     },
+    strategy: 'always', // 常にドロップ可能な状態を維持
   });
 
   return (

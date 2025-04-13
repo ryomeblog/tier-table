@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   DndContext,
-  closestCenter,
+  pointerWithin,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -30,32 +30,23 @@ const getTierId = name => `tier-${name}`;
 const getTargetContainer = (over, items) => {
   if (!over) return null;
 
-  // 1. ドロップ領域のデータを確認（TierRowからのデータが優先）
+  // 1. Tier領域への直接ドロップを最優先で確認
+  // この判定でマウスを離した位置のTierが判定される
   if (over.data.current?.type === 'tier') {
     return over.data.current.tierId;
   }
 
-  // 2. ストレージエリアへのドロップ
-  if (over.id === STORAGE_ID) {
-    return STORAGE_ID;
-  }
-
-  // 3. 既知のTier IDへのドロップ
-  if (typeof over.id === 'string' && over.id.startsWith('tier-')) {
-    return over.id;
-  }
-
-  // 4. アイテム上へのドロップ（親コンテナを特定）
+  // 2. アイテム上へのドロップを確認（同じTier内での並べ替え用）
   const dropTargetId = over.id;
-  // Tierのアイテムを検索
   for (const tier of TIERS) {
     const tierId = getTierId(tier.name);
     if (items[tierId]?.some(item => item.id === dropTargetId)) {
       return tierId;
     }
   }
-  // ストレージのアイテムを検索
-  if (items[STORAGE_ID]?.some(item => item.id === dropTargetId)) {
+
+  // 3. ストレージエリアへのドロップを確認
+  if (over.id === STORAGE_ID || items[STORAGE_ID]?.some(item => item.id === dropTargetId)) {
     return STORAGE_ID;
   }
 
@@ -159,8 +150,10 @@ const TierList = ({ items, setItems, onRemoveItem }) => {
       return;
     }
 
-    // ドロップ先のコンテナを特定
-    const overContainer = getTargetContainer(over, items);
+    // 1. まず、ドロップ先のTierを特定（Tier領域への直接ドロップを優先）
+    const overTierId = over.data.current?.type === 'tier' ? over.data.current.tierId : null;
+    // それ以外の場合は、通常のコンテナ特定ロジックを使用
+    const overContainer = overTierId || getTargetContainer(over, items);
 
     if (!overContainer || !activeContainer) {
       setActiveId(null);
@@ -169,45 +162,33 @@ const TierList = ({ items, setItems, onRemoveItem }) => {
       return;
     }
 
+    // 2. 同じTier内での移動かどうかを判定
     if (overContainer === activeContainer) {
-      // 同じコンテナ内での移動（順序の変更）
       const activeItems = items[activeContainer];
       if (!activeItems) return;
 
       const oldIndex = activeItems.findIndex(item => item.id === active.id);
-      const overItemIndex = items[overContainer].findIndex(item => item.id === over.id);
-      const newIndex = overItemIndex >= 0 ? overItemIndex : items[overContainer].length;
+      const overItemIndex = activeItems.findIndex(item => item.id === over.id);
 
-      if (oldIndex !== -1) {
+      // 同じTier内での並び替えの場合のみ順序を変更
+      if (overItemIndex !== -1 && oldIndex !== overItemIndex) {
         setItems(prev => ({
           ...prev,
-          [activeContainer]: arrayMove(
-            prev[activeContainer],
-            oldIndex,
-            newIndex === -1 ? prev[activeContainer].length : newIndex
-          ),
+          [activeContainer]: arrayMove(prev[activeContainer], oldIndex, overItemIndex),
         }));
       }
     } else {
-      // 異なるコンテナ間での移動
+      // 3. 異なるTier間での移動
       const sourceItems = items[activeContainer];
       const movedItem = sourceItems?.find(item => item.id === active.id);
-      if (!movedItem) {
-        setActiveId(null);
-        setActiveIsStorage(false);
-        setActiveContainer(null);
-        return;
-      }
+      if (!movedItem) return;
 
-      // 移動を実行（制限なし）
-      setItems(prev => {
-        const newItems = {
-          ...prev,
-          [activeContainer]: prev[activeContainer].filter(item => item.id !== active.id),
-          [overContainer]: [...(prev[overContainer] || []), movedItem],
-        };
-        return newItems;
-      });
+      // 新しいTierに移動（離した場所のTierを優先）
+      setItems(prev => ({
+        ...prev,
+        [activeContainer]: prev[activeContainer].filter(item => item.id !== active.id),
+        [overContainer]: [...(prev[overContainer] || []), movedItem],
+      }));
     }
 
     setActiveId(null);
@@ -219,7 +200,7 @@ const TierList = ({ items, setItems, onRemoveItem }) => {
     <div id="tier-list-container" className="w-full max-w-[700px] mx-auto space-y-0 relative">
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={pointerWithin}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
