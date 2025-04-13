@@ -95,7 +95,7 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem }) => {
 
       {/* Add Item Modal */}
       {isAddingItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-dark-surface p-6 rounded-lg max-w-md w-full">
             <h3 className="text-xl font-bold mb-4">アイテムを追加</h3>
 
