@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { toPng } from 'html-to-image';
 
-const ControlPanel = ({ onAddItem, onClearAll }) => {
+const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem }) => {
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItemText, setNewItemText] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedColor, setSelectedColor] = useState('#ff8a8a');
 
   const handleExportImage = async () => {
     try {
@@ -51,12 +52,12 @@ const ControlPanel = ({ onAddItem, onClearAll }) => {
     if (selectedFile) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        onAddItem(reader.result);
+        onAddItem(reader.result, selectedColor);
         setSelectedFile(null);
       };
       reader.readAsDataURL(selectedFile);
     } else if (newItemText.trim()) {
-      onAddItem(newItemText.trim());
+      onAddItem(newItemText.trim(), selectedColor);
       setNewItemText('');
     }
     setIsAddingItem(false);
@@ -120,6 +121,16 @@ const ControlPanel = ({ onAddItem, onClearAll }) => {
                 />
               </div>
 
+              <div>
+                <label className="block mb-2">カードの色:</label>
+                <input
+                  type="color"
+                  value={selectedColor}
+                  onChange={e => setSelectedColor(e.target.value)}
+                  className="w-full h-10 p-1 bg-[#333333] border border-[#555555] rounded cursor-pointer"
+                />
+              </div>
+
               <div className="flex justify-end gap-2 mt-4">
                 <button
                   onClick={() => setIsAddingItem(false)}
@@ -145,6 +156,7 @@ const ControlPanel = ({ onAddItem, onClearAll }) => {
 ControlPanel.propTypes = {
   onAddItem: PropTypes.func.isRequired,
   onClearAll: PropTypes.func.isRequired,
+  onRemoveItem: PropTypes.func.isRequired,
 };
 
 export default ControlPanel;

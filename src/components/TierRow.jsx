@@ -46,7 +46,13 @@ const TierRow = ({ tier, color, items, children }) => {
 TierRow.propTypes = {
   tier: PropTypes.string.isRequired,
   color: PropTypes.string.isRequired,
-  items: PropTypes.arrayOf(PropTypes.string).isRequired,
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      content: PropTypes.string.isRequired,
+      color: PropTypes.string.isRequired,
+    })
+  ).isRequired,
   children: PropTypes.node,
 };
 

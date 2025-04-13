@@ -30,7 +30,7 @@ const getTierId = name => `tier-${name}`;
 const getTargetContainer = (over, items) => {
   if (!over) return null;
 
-  // 1. ドロップ領域のデータを確認
+  // 1. ドロップ領域のデータを確認（TierRowからのデータが優先）
   if (over.data.current?.type === 'tier') {
     return over.data.current.tierId;
   }
@@ -47,22 +47,22 @@ const getTargetContainer = (over, items) => {
 
   // 4. アイテム上へのドロップ（親コンテナを特定）
   const dropTargetId = over.id;
-  // まずTier内を検索
+  // Tierのアイテムを検索
   for (const tier of TIERS) {
     const tierId = getTierId(tier.name);
-    if (items[tierId]?.includes(dropTargetId)) {
+    if (items[tierId]?.some(item => item.id === dropTargetId)) {
       return tierId;
     }
   }
-  // ストレージ内を検索
-  if (items[STORAGE_ID]?.includes(dropTargetId)) {
+  // ストレージのアイテムを検索
+  if (items[STORAGE_ID]?.some(item => item.id === dropTargetId)) {
     return STORAGE_ID;
   }
 
   return null;
 };
 
-const StorageArea = ({ items }) => {
+const StorageArea = ({ items, onRemove }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: STORAGE_ID,
     data: {
@@ -77,13 +77,18 @@ const StorageArea = ({ items }) => {
       <div
         ref={setNodeRef}
         className={`
-          w-full h-[40px] bg-[#333333] border-2 border-[#555555] rounded px-2
+          w-full h-[90px] bg-[#333333] border-[3px] border-[#777777] rounded p-4
           flex gap-2 items-center overflow-x-auto transition-colors
           ${isOver ? 'bg-opacity-70 border-dashed' : ''}
         `}
       >
-        {(items || []).map(id => (
-          <DraggableItem key={id} id={id} content={id} isInStorage={true} />
+        {(items || []).map(item => (
+          <DraggableItem
+            key={item.id}
+            item={item}
+            isInStorage={true}
+            onRemove={itemId => onRemove(itemId, STORAGE_ID)}
+          />
         ))}
       </div>
     </div>
@@ -91,13 +96,24 @@ const StorageArea = ({ items }) => {
 };
 
 StorageArea.propTypes = {
-  items: PropTypes.arrayOf(PropTypes.string).isRequired,
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      content: PropTypes.string.isRequired,
+      color: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  onRemove: PropTypes.func.isRequired,
 };
 
-const TierList = ({ items, setItems }) => {
+const TierList = ({ items, setItems, onRemoveItem }) => {
   const [activeId, setActiveId] = useState(null);
   const [activeIsStorage, setActiveIsStorage] = useState(false);
   const [activeContainer, setActiveContainer] = useState(null);
+
+  const handleRemove = (itemId, containerId) => {
+    onRemoveItem(itemId, containerId);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -110,19 +126,6 @@ const TierList = ({ items, setItems }) => {
     })
   );
 
-  // アイテムが指定のTier内に存在するかチェック
-  const isItemInTier = (itemId, tierId) => {
-    const tierItems = items[tierId] || [];
-    return tierItems.includes(itemId);
-  };
-
-  // アイテムが他のTierに存在するかチェック（ストレージは除く）
-  const isItemInOtherTiers = (itemId, currentTierId) => {
-    return TIERS.map(tier => getTierId(tier.name))
-      .filter(tierId => tierId !== currentTierId)
-      .some(tierId => isItemInTier(itemId, tierId));
-  };
-
   const handleDragStart = event => {
     const isFromStorage = !event.active.data.current?.sortable;
     let container;
@@ -134,7 +137,7 @@ const TierList = ({ items, setItems }) => {
       // Tierからの開始の場合
       for (const tier of TIERS) {
         const tierId = getTierId(tier.name);
-        if (items[tierId]?.includes(event.active.id)) {
+        if (items[tierId]?.some(item => item.id === event.active.id)) {
           container = tierId;
           break;
         }
@@ -144,34 +147,12 @@ const TierList = ({ items, setItems }) => {
     setActiveId(event.active.id);
     setActiveIsStorage(isFromStorage);
     setActiveContainer(container);
-
-    console.log('Drag Start:', {
-      id: event.active.id,
-      container,
-      isStorage: isFromStorage,
-      data: event.active.data.current,
-    });
   };
 
   const handleDragEnd = event => {
     const { active, over } = event;
 
-    console.log('Drag End Raw Event:', {
-      active: {
-        id: active.id,
-        data: active.data.current,
-      },
-      over: over
-        ? {
-            id: over.id,
-            data: over.data.current,
-          }
-        : null,
-      activeContainer,
-    });
-
     if (!over) {
-      console.log('No over target, cancelling drag');
       setActiveId(null);
       setActiveIsStorage(false);
       setActiveContainer(null);
@@ -181,16 +162,7 @@ const TierList = ({ items, setItems }) => {
     // ドロップ先のコンテナを特定
     const overContainer = getTargetContainer(over, items);
 
-    console.log('Resolved containers:', {
-      activeContainer,
-      overContainer,
-      activeItems: items[activeContainer],
-      overItems: items[overContainer],
-      overData: over.data.current,
-    });
-
     if (!overContainer || !activeContainer) {
-      console.log('Invalid container:', { overContainer, activeContainer });
       setActiveId(null);
       setActiveIsStorage(false);
       setActiveContainer(null);
@@ -198,61 +170,44 @@ const TierList = ({ items, setItems }) => {
     }
 
     if (overContainer === activeContainer) {
-      // 同じコンテナ内での移動
+      // 同じコンテナ内での移動（順序の変更）
       const activeItems = items[activeContainer];
       if (!activeItems) return;
 
-      const oldIndex = activeItems.indexOf(active.id);
-      const overItemIndex = items[overContainer].indexOf(over.id);
+      const oldIndex = activeItems.findIndex(item => item.id === active.id);
+      const overItemIndex = items[overContainer].findIndex(item => item.id === over.id);
       const newIndex = overItemIndex >= 0 ? overItemIndex : items[overContainer].length;
 
       if (oldIndex !== -1) {
-        console.log('Reordering within container:', {
-          container: activeContainer,
-          oldIndex,
-          newIndex,
-        });
-
         setItems(prev => ({
           ...prev,
-          [activeContainer]: arrayMove(prev[activeContainer], oldIndex, newIndex),
+          [activeContainer]: arrayMove(
+            prev[activeContainer],
+            oldIndex,
+            newIndex === -1 ? prev[activeContainer].length : newIndex
+          ),
         }));
       }
     } else {
-      // コンテナ間の移動
+      // 異なるコンテナ間での移動
       const sourceItems = items[activeContainer];
-      if (!sourceItems?.includes(active.id)) {
-        console.log('Item not found in source container');
+      const movedItem = sourceItems?.find(item => item.id === active.id);
+      if (!movedItem) {
         setActiveId(null);
         setActiveIsStorage(false);
         setActiveContainer(null);
         return;
       }
 
-      // ストレージとの移動、または同じアイテムが存在しない場合のみ許可
-      if (
-        activeContainer === STORAGE_ID ||
-        overContainer === STORAGE_ID ||
-        !isItemInOtherTiers(active.id, overContainer)
-      ) {
-        console.log('Moving between containers:', {
-          from: activeContainer,
-          to: overContainer,
-          item: active.id,
-        });
-
-        setItems(prev => {
-          const newItems = {
-            ...prev,
-            [activeContainer]: prev[activeContainer].filter(item => item !== active.id),
-            [overContainer]: [...(prev[overContainer] || []), active.id],
-          };
-          console.log('New items state:', newItems);
-          return newItems;
-        });
-      } else {
-        console.log('Duplicate item detected, cancelling move');
-      }
+      // 移動を実行（制限なし）
+      setItems(prev => {
+        const newItems = {
+          ...prev,
+          [activeContainer]: prev[activeContainer].filter(item => item.id !== active.id),
+          [overContainer]: [...(prev[overContainer] || []), movedItem],
+        };
+        return newItems;
+      });
     }
 
     setActiveId(null);
@@ -273,20 +228,31 @@ const TierList = ({ items, setItems }) => {
           const tierItems = items[tierId] || [];
 
           return (
-            <TierRow key={name} tier={name} color={color} items={tierItems}>
-              {tierItems.map(id => (
-                <DraggableItem key={id} id={id} content={id} isInStorage={false} />
-              ))}
-            </TierRow>
+            <SortableContext key={tierId} items={tierItems}>
+              <TierRow tier={name} color={color} items={tierItems}>
+                {tierItems.map(item => (
+                  <DraggableItem
+                    key={item.id}
+                    item={item}
+                    isInStorage={false}
+                    onRemove={itemId => handleRemove(itemId, tierId)}
+                  />
+                ))}
+              </TierRow>
+            </SortableContext>
           );
         })}
 
-        <StorageArea items={items.storage} />
+        <StorageArea items={items.storage} onRemove={handleRemove} />
 
         {/* Drag Overlay */}
         <DragOverlay>
-          {activeId ? (
-            <DraggableItem id={activeId} content={activeId} isInStorage={activeIsStorage} />
+          {activeId && items[activeContainer] ? (
+            <DraggableItem
+              item={items[activeContainer].find(item => item.id === activeId)}
+              isInStorage={activeIsStorage}
+              onRemove={() => {}}
+            />
           ) : null}
         </DragOverlay>
       </DndContext>
@@ -296,14 +262,51 @@ const TierList = ({ items, setItems }) => {
 
 TierList.propTypes = {
   items: PropTypes.shape({
-    storage: PropTypes.arrayOf(PropTypes.string).isRequired,
-    'tier-S': PropTypes.arrayOf(PropTypes.string),
-    'tier-A': PropTypes.arrayOf(PropTypes.string),
-    'tier-B': PropTypes.arrayOf(PropTypes.string),
-    'tier-C': PropTypes.arrayOf(PropTypes.string),
-    'tier-D': PropTypes.arrayOf(PropTypes.string),
+    storage: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        content: PropTypes.string.isRequired,
+        color: PropTypes.string.isRequired,
+      })
+    ).isRequired,
+    'tier-S': PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        content: PropTypes.string.isRequired,
+        color: PropTypes.string.isRequired,
+      })
+    ),
+    'tier-A': PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        content: PropTypes.string.isRequired,
+        color: PropTypes.string.isRequired,
+      })
+    ),
+    'tier-B': PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        content: PropTypes.string.isRequired,
+        color: PropTypes.string.isRequired,
+      })
+    ),
+    'tier-C': PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        content: PropTypes.string.isRequired,
+        color: PropTypes.string.isRequired,
+      })
+    ),
+    'tier-D': PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        content: PropTypes.string.isRequired,
+        color: PropTypes.string.isRequired,
+      })
+    ),
   }).isRequired,
   setItems: PropTypes.func.isRequired,
+  onRemoveItem: PropTypes.func.isRequired,
 };
 
 export default TierList;
