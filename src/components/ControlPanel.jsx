@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { toPng } from 'html-to-image';
 
@@ -9,6 +9,13 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem, getShareableState }
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedColor, setSelectedColor] = useState('#ff8a8a');
   const [copySuccess, setCopySuccess] = useState(false);
+  const [shareableUrl, setShareableUrl] = useState('');
+
+  useEffect(() => {
+    if (isShareModalOpen) {
+      setShareableUrl(generateShareableUrl());
+    }
+  }, [isShareModalOpen]);
 
   const handleExportImage = async () => {
     try {
@@ -62,10 +69,16 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem, getShareableState }
     return `${window.location.origin}${window.location.pathname}?${params}`;
   };
 
+  const truncateUrl = url => {
+    if (url.length > 60) {
+      return url.substring(0, 57) + '...';
+    }
+    return url;
+  };
+
   const handleCopyUrl = async () => {
     try {
-      const url = generateShareableUrl();
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareableUrl);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
@@ -75,14 +88,12 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem, getShareableState }
 
   const handleShareOnX = () => {
     const text = 'Tier表を作成しました！ #TierMaker';
-    const url = generateShareableUrl();
-    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareableUrl)}`;
     window.open(tweetUrl, '_blank');
   };
 
   const handleShareOnLine = () => {
-    const url = generateShareableUrl();
-    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
+    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareableUrl)}`;
     window.open(lineUrl, '_blank');
   };
 
@@ -203,6 +214,11 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem, getShareableState }
             <h3 className="text-xl font-bold mb-4">シェア</h3>
 
             <div className="space-y-4">
+              {/* URL Display */}
+              <div className="bg-[#222222] p-3 rounded-lg break-all">
+                <p className="text-sm text-gray-300 font-mono">{truncateUrl(shareableUrl)}</p>
+              </div>
+
               <div className="relative">
                 <button
                   onClick={handleCopyUrl}
