@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { toPng } from 'html-to-image';
 
@@ -6,16 +6,26 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem, getShareableState }
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [newItemText, setNewItemText] = useState('');
+  const [composingText, setComposingText] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedColor, setSelectedColor] = useState('#ff8a8a');
   const [copySuccess, setCopySuccess] = useState(false);
   const [shareableUrl, setShareableUrl] = useState('');
+  const [isComposing, setIsComposing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [enterKeyPressed, setEnterKeyPressed] = useState(false);
+
+  const generateShareableUrl = useCallback(() => {
+    const state = getShareableState();
+    const params = new URLSearchParams({ data: state });
+    return `${window.location.origin}${window.location.pathname}?${params}`;
+  }, [getShareableState]);
 
   useEffect(() => {
     if (isShareModalOpen) {
       setShareableUrl(generateShareableUrl());
     }
-  }, [isShareModalOpen]);
+  }, [isShareModalOpen, generateShareableUrl]);
 
   const handleExportImage = async () => {
     try {
@@ -63,12 +73,6 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem, getShareableState }
     }
   };
 
-  const generateShareableUrl = () => {
-    const state = getShareableState();
-    const params = new URLSearchParams({ data: state });
-    return `${window.location.origin}${window.location.pathname}?${params}`;
-  };
-
   const truncateUrl = url => {
     if (url.length > 60) {
       return url.substring(0, 57) + '...';
@@ -97,20 +101,47 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem, getShareableState }
     window.open(lineUrl, '_blank');
   };
 
-  const handleAddItem = () => {
-    if (selectedFile) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onAddItem(reader.result, selectedColor);
-        setSelectedFile(null);
-      };
-      reader.readAsDataURL(selectedFile);
-    } else if (newItemText.trim()) {
-      onAddItem(newItemText.trim(), selectedColor);
-      setNewItemText('');
-    }
-    setIsAddingItem(false);
-  };
+  const handleAddItem = useCallback(
+    text => {
+      if (isProcessing) return;
+
+      setIsProcessing(true);
+
+      try {
+        if (selectedFile) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            onAddItem(reader.result, selectedColor);
+            setSelectedFile(null);
+            setIsAddingItem(false);
+            setIsProcessing(false);
+          };
+          reader.readAsDataURL(selectedFile);
+          return;
+        }
+
+        // テキストの処理
+        let contentToAdd = '';
+        if (typeof text === 'string') {
+          contentToAdd = text;
+        } else if (text === undefined && typeof newItemText === 'string') {
+          contentToAdd = newItemText;
+        }
+
+        if (contentToAdd.trim()) {
+          onAddItem(contentToAdd.trim(), selectedColor);
+          setNewItemText('');
+          setComposingText('');
+          setIsAddingItem(false);
+        }
+      } finally {
+        if (!selectedFile) {
+          setIsProcessing(false);
+        }
+      }
+    },
+    [isProcessing, selectedFile, newItemText, selectedColor, onAddItem]
+  );
 
   return (
     <div className="flex justify-center gap-4 mb-4">
@@ -161,8 +192,39 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem, getShareableState }
                 <label className="block mb-2">テキスト:</label>
                 <input
                   type="text"
-                  value={newItemText}
-                  onChange={e => setNewItemText(e.target.value)}
+                  value={isComposing ? composingText : newItemText}
+                  onChange={e => {
+                    if (isComposing) {
+                      setComposingText(e.target.value);
+                    } else {
+                      setNewItemText(e.target.value);
+                    }
+                  }}
+                  onCompositionStart={e => {
+                    setIsComposing(true);
+                    setComposingText(e.target.value || newItemText);
+                  }}
+                  onCompositionEnd={e => {
+                    const finalText = e.target.value;
+                    setIsComposing(false);
+                    setNewItemText(finalText);
+                    setComposingText('');
+
+                    if (enterKeyPressed && !isProcessing) {
+                      setEnterKeyPressed(false);
+                      handleAddItem(finalText);
+                    }
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (isComposing) {
+                        setEnterKeyPressed(true);
+                      } else if (!isProcessing && newItemText.trim()) {
+                        handleAddItem(newItemText);
+                      }
+                    }
+                  }}
                   className="w-full p-2 bg-[#333333] border border-[#555555] rounded"
                   placeholder="テキストを入力"
                 />
@@ -196,7 +258,7 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem, getShareableState }
                   キャンセル
                 </button>
                 <button
-                  onClick={handleAddItem}
+                  onClick={() => handleAddItem()}
                   className="px-4 py-2 bg-[#555555] rounded hover:bg-[#666666] transition-colors"
                 >
                   追加

@@ -53,7 +53,7 @@ const getTargetContainer = (over, items) => {
   return null;
 };
 
-const StorageArea = ({ items, onRemove }) => {
+const StorageArea = ({ items, onRemove, onEditItem }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: STORAGE_ID,
     data: {
@@ -79,6 +79,7 @@ const StorageArea = ({ items, onRemove }) => {
             item={item}
             isInStorage={true}
             onRemove={itemId => onRemove(itemId, STORAGE_ID)}
+            onEdit={updatedItem => onEditItem(item.id, updatedItem)}
           />
         ))}
       </div>
@@ -95,9 +96,10 @@ StorageArea.propTypes = {
     })
   ).isRequired,
   onRemove: PropTypes.func.isRequired,
+  onEditItem: PropTypes.func.isRequired,
 };
 
-const TierList = ({ items, setItems, onRemoveItem }) => {
+const TierList = ({ items, setItems, onRemoveItem, onEditItem }) => {
   const [activeId, setActiveId] = useState(null);
   const [activeIsStorage, setActiveIsStorage] = useState(false);
   const [activeContainer, setActiveContainer] = useState(null);
@@ -217,6 +219,7 @@ const TierList = ({ items, setItems, onRemoveItem }) => {
                     item={item}
                     isInStorage={false}
                     onRemove={itemId => handleRemove(itemId, tierId)}
+                    onEdit={updatedItem => onEditItem(item.id, tierId, updatedItem)}
                   />
                 ))}
               </TierRow>
@@ -224,7 +227,11 @@ const TierList = ({ items, setItems, onRemoveItem }) => {
           );
         })}
 
-        <StorageArea items={items.storage} onRemove={handleRemove} />
+        <StorageArea
+          items={items.storage}
+          onRemove={handleRemove}
+          onEditItem={(itemId, updatedItem) => onEditItem(itemId, STORAGE_ID, updatedItem)}
+        />
 
         {/* Drag Overlay */}
         <DragOverlay>
@@ -233,6 +240,7 @@ const TierList = ({ items, setItems, onRemoveItem }) => {
               item={items[activeContainer].find(item => item.id === activeId)}
               isInStorage={activeIsStorage}
               onRemove={() => {}}
+              onEdit={() => {}}
             />
           ) : null}
         </DragOverlay>
@@ -288,6 +296,7 @@ TierList.propTypes = {
   }).isRequired,
   setItems: PropTypes.func.isRequired,
   onRemoveItem: PropTypes.func.isRequired,
+  onEditItem: PropTypes.func.isRequired,
 };
 
 export default TierList;

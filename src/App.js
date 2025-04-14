@@ -51,6 +51,17 @@ function App() {
     }));
   };
 
+  const handleEditItem = (itemId, containerId, updatedItem) => {
+    setItems(prev => ({
+      ...prev,
+      [containerId]: prev[containerId].map(item =>
+        item.id === itemId
+          ? { ...item, content: updatedItem.content, color: updatedItem.color }
+          : item
+      ),
+    }));
+  };
+
   const handleRemoveItem = (itemId, containerId) => {
     setItems(prev => ({
       ...prev,
@@ -89,7 +100,12 @@ function App() {
         id="tier-list-container"
         className="max-w-[800px] mx-auto bg-dark-surface p-8 rounded-lg"
       >
-        <TierList items={items} setItems={setItems} onRemoveItem={handleRemoveItem} />
+        <TierList
+          items={items}
+          setItems={setItems}
+          onRemoveItem={handleRemoveItem}
+          onEditItem={handleEditItem}
+        />
       </main>
 
       <footer className="max-w-[800px] mx-auto mt-8 text-center text-sm text-gray-400">
