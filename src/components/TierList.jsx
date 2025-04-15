@@ -64,7 +64,7 @@ const StorageArea = ({ items, onRemove, onEditItem }) => {
 
   return (
     <div className="mt-4">
-      <h2 className="text-center text-xl font-bold mb-2">アイテム置き場</h2>
+      <h2 className="text-center text-xl font-bold mb-2">Tierランク外</h2>
       <div
         ref={setNodeRef}
         className={`

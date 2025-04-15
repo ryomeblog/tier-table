@@ -40,15 +40,27 @@ const EditItemModal = ({ item, onClose, onSave }) => {
     e.preventDefault();
     e.stopPropagation();
 
+    const updatedItem = {};
+
     if (selectedFile) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        onSave({ content: reader.result, color: selectedColor });
+        updatedItem.content = reader.result;
+        // 画像の場合はカラーを含めない
+        if (!reader.result.startsWith('data:image')) {
+          updatedItem.color = selectedColor;
+        }
+        onSave(updatedItem);
         onClose();
       };
       reader.readAsDataURL(selectedFile);
     } else if (editingContent.trim() || item.content.startsWith('data:image')) {
-      onSave({ content: editingContent.trim() || item.content, color: selectedColor });
+      updatedItem.content = editingContent.trim() || item.content;
+      // 画像の場合はカラーを含めない
+      if (!updatedItem.content.startsWith('data:image')) {
+        updatedItem.color = selectedColor;
+      }
+      onSave(updatedItem);
       onClose();
     }
   };
@@ -100,51 +112,53 @@ const EditItemModal = ({ item, onClose, onSave }) => {
               />
             </div>
           ) : (
-            <div>
-              <label className="block mb-2">テキスト:</label>
-              <input
-                type="text"
-                value={editingContent}
-                onChange={e => setEditingContent(e.target.value)}
-                onClick={handleModalClick}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                  }
-                }}
-                className="w-full p-2 bg-[#333333] border border-[#555555] rounded"
-                placeholder="テキストを入力"
-              />
-            </div>
+            <>
+              <div>
+                <label className="block mb-2">テキスト:</label>
+                <input
+                  type="text"
+                  value={editingContent}
+                  onChange={e => setEditingContent(e.target.value)}
+                  onClick={handleModalClick}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                  className="w-full p-2 bg-[#333333] border border-[#555555] rounded"
+                  placeholder="テキストを入力"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2">カードの色:</label>
+                <input
+                  type="color"
+                  value={selectedColor}
+                  onChange={e => setSelectedColor(e.target.value)}
+                  onClick={handleModalClick}
+                  className="w-full h-10 p-1 bg-[#333333] border border-[#555555] rounded cursor-pointer"
+                />
+              </div>
+            </>
           )}
+        </div>
 
-          <div>
-            <label className="block mb-2">カードの色:</label>
-            <input
-              type="color"
-              value={selectedColor}
-              onChange={e => setSelectedColor(e.target.value)}
-              onClick={handleModalClick}
-              className="w-full h-10 p-1 bg-[#333333] border border-[#555555] rounded cursor-pointer"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 mt-4">
-            <button
-              onClick={handleClose}
-              className="px-4 py-2 bg-[#444444] rounded hover:bg-[#555555] transition-colors"
-              type="button"
-            >
-              キャンセル
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 bg-[#555555] rounded hover:bg-[#666666] transition-colors"
-              type="button"
-            >
-              保存
-            </button>
-          </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <button
+            onClick={handleClose}
+            className="px-4 py-2 bg-[#444444] rounded hover:bg-[#555555] transition-colors"
+            type="button"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-[#555555] rounded hover:bg-[#666666] transition-colors"
+            type="button"
+          >
+            保存
+          </button>
         </div>
       </div>
     </div>,
