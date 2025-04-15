@@ -19,28 +19,20 @@ const EditItemModal = ({ item, onClose, onSave }) => {
   const [editingContent, setEditingContent] = useState(item.content);
   const [selectedColor, setSelectedColor] = useState(item.color);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
   const [displayContent] = useState(item.content);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'unset';
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
     };
-  }, [previewUrl]);
+  }, []);
 
   const handleFileChange = e => {
     e.stopPropagation();
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-      setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
@@ -106,16 +98,6 @@ const EditItemModal = ({ item, onClose, onSave }) => {
                 onClick={handleModalClick}
                 className="w-full p-2 bg-[#333333] border border-[#555555] rounded cursor-pointer"
               />
-              {/* プレビュー */}
-              <div className="mt-2">
-                <label className="block mb-2">プレビュー:</label>
-                <img
-                  src={previewUrl || item.content}
-                  alt="プレビュー"
-                  className="w-full h-40 object-contain bg-[#222222] rounded"
-                  onClick={handleModalClick}
-                />
-              </div>
             </div>
           ) : (
             <div>

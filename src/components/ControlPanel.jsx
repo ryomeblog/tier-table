@@ -14,18 +14,27 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem, getShareableState }
   const [isComposing, setIsComposing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [enterKeyPressed, setEnterKeyPressed] = useState(false);
+  const [includeImagesInUrl, setIncludeImagesInUrl] = useState(false);
 
   const generateShareableUrl = useCallback(() => {
-    const state = getShareableState();
-    const params = new URLSearchParams({ data: state });
-    return `${window.location.origin}${window.location.pathname}?${params}`;
-  }, [getShareableState]);
+    // 既存のURLパラメータを確認
+    const params = new URLSearchParams(window.location.search);
+    // シェアモーダルで新規にURLを生成する場合のみ、新しいURLを返す
+    if (!params.get('data')) {
+      const state = getShareableState(includeImagesInUrl);
+      params.set('data', state);
+      return `${window.location.origin}${window.location.pathname}?${params}`;
+    }
+    // クエリパラメータが存在する場合は現在のURLを使用
+    return window.location.href;
+  }, [getShareableState, includeImagesInUrl]);
 
+  // シェアモーダルを開いた時に一度だけURLを生成
   useEffect(() => {
     if (isShareModalOpen) {
       setShareableUrl(generateShareableUrl());
     }
-  }, [isShareModalOpen, generateShareableUrl]);
+  }, [isShareModalOpen, generateShareableUrl, includeImagesInUrl]);
 
   const handleExportImage = async () => {
     try {
@@ -276,6 +285,28 @@ const ControlPanel = ({ onAddItem, onClearAll, onRemoveItem, getShareableState }
             <h3 className="text-xl font-bold mb-4">シェア</h3>
 
             <div className="space-y-4">
+              {/* Include Images Checkbox */}
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  id="includeImages"
+                  checked={includeImagesInUrl}
+                  onChange={e => {
+                    setIncludeImagesInUrl(e.target.checked);
+                  }}
+                  className="w-4 h-4"
+                />
+                <label htmlFor="includeImages" className="relative flex items-center">
+                  画像をURLに含める
+                  <div className="group relative ml-2 cursor-help">
+                    <span className="text-gray-400">ℹ️</span>
+                    <div className="invisible group-hover:visible absolute left-0 bottom-full mb-2 w-64 p-2 bg-gray-800 text-sm rounded shadow-lg">
+                      画像をBase64形式でURLに含めるため、URLが長くなります。画像を含めない場合は、ブラウザのLocalStorageにデータが保存されます。
+                    </div>
+                  </div>
+                </label>
+              </div>
+
               {/* URL Display */}
               <div className="bg-[#222222] p-3 rounded-lg break-all">
                 <p className="text-sm text-gray-300 font-mono">{truncateUrl(shareableUrl)}</p>
